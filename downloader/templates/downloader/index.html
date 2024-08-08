@@ -4,29 +4,96 @@
     <title>YouTube Video İndirici</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header, footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+        }
+
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .container {
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            background-color: #f9f9f9;
+            padding: 100px 20px 60px;
+            text-align: center;
         }
 
-        h1 {
-            text-align: center;
+        .container h1 {
+            font-size: 3em;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .container p {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 40px;
+            max-width: 600px;
         }
 
         form {
             display: flex;
             flex-direction: column;
             align-items: center;
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
         }
 
         form > * {
             margin: 10px 0;
+            width: 100%;
+        }
+
+        input[type="text"], select {
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: calc(100% - 30px);
+        }
+
+        button {
+            padding: 15px 30px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #2980b9;
         }
 
         #loader {
@@ -37,7 +104,7 @@
             height: 60px;
             animation: spin 2s linear infinite;
             display: none;
-            margin: auto;
+            margin: 20px auto;
         }
 
         @keyframes spin {
@@ -48,17 +115,19 @@
         #videoThumbnail {
             display: none;
             margin-top: 20px;
+            border-radius: 8px;
         }
 
         #progressContainer {
             display: flex;
             flex-direction: column;
             align-items: center;
+            margin-top: 20px;
         }
 
         @media (max-width: 600px) {
-            body {
-                padding: 10px;
+            .container {
+                padding: 100px 10px 60px;
             }
 
             form {
@@ -151,7 +220,6 @@
         window.onload = function() {
             startDownload();
 
-            // URL input alanında bir değişiklik olduğunda fetchVideoInfo fonksiyonunu çağır
             var urlInput = document.getElementById("url");
             urlInput.addEventListener('input', function() {
                 fetchVideoInfo();
@@ -160,21 +228,30 @@
     </script>
 </head>
 <body>
-    <h1>YouTube Video İndirici</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.url.label_tag }} {{ form.url }}
-        <br><br>
-        {{ form.quality.label_tag }} {{ form.quality }}
-        <br><br>
-        <button type="submit">İndir</button>
-    </form>
-    <h3 id="videoTitle"></h3>
-    <img id="videoThumbnail" src="" alt="Video Thumbnail" width="320">
-    <br>
-    <div id="progressContainer">
-        <p id="progressPercentage">İndirmek İstediğiniz Videonun Linkini Yapıştırın</p>
+    <header>
+        <h2>YouTube Video İndirici</h2>
+    </header>
+    <div class="container">
+        <h1>YouTube'dan Video İndirin</h1>
+        <p>İstediğiniz YouTube videosunun URL'sini girin ve uygun kaliteyi seçerek indirin.</p>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.url.label_tag }} {{ form.url }}
+            <br>
+            {{ form.quality.label_tag }} {{ form.quality }}
+            <br>
+            <button type="submit">İndir</button>
+        </form>
+        <h3 id="videoTitle"></h3>
+        <img id="videoThumbnail" src="" alt="Video Thumbnail" width="320">
+        <div id="progressContainer">
+            <p id="progressPercentage">İndirmek İstediğiniz Videonun Linkini Yapıştırın</p>
+        </div>
+        <div id="loader"></div>
     </div>
-    <div id="loader"></div>
+    <footer>
+        <p>&copy; 2024 Orkan Baştürk. Tüm Hakları Saklıdır.</p>
+    </footer>
 </body>
 </html>
+
