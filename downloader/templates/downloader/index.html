@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>YouTube Video İndirici</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        form > * {
+            margin: 10px 0;
+        }
+
+        #loader {
+            border: 8px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 8px solid #3498db;
+            width: 60px;
+            height: 60px;
+            animation: spin 2s linear infinite;
+            display: none;
+            margin: auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #videoThumbnail {
+            display: none;
+            margin-top: 20px;
+        }
+
+        #progressContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            form {
+                width: 100%;
+            }
+
+            #videoThumbnail {
+                width: 100%;
+            }
+        }
+    </style>
+    <script>
+        function fetchVideoInfo() {
+            var url = document.getElementById("url").value;
+            if (url) {
+                fetch('/fetch_info/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ url: url })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("videoTitle").innerText = data.title;
+                    var thumbnail = document.getElementById("videoThumbnail");
+                    if (data.thumbnail) {
+                        thumbnail.src = data.thumbnail;
+                        thumbnail.style.display = "block";
+                    } else {
+                        thumbnail.style.display = "none";
+                    }
+                })
+                .catch(error => console.error('Error fetching video info:', error));
+            }
+        }
+
+        function startDownload() {
+            var form = document.querySelector('form');
+            var progressContainer = document.getElementById("progressContainer");
+            var progressPercentage = document.getElementById("progressPercentage");
+            var loader = document.getElementById("loader");
+
+            form.addEventListener('submit', function(event) {
+                progressContainer.style.display = 'block';
+                loader.style.display = 'block';
+                event.preventDefault();
+
+                var formData = new FormData(form);
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/', true);
+
+                xhr.upload.addEventListener('progress', function(e) {
+                    if (e.lengthComputable) {
+                        var percentComplete = (e.loaded / e.total) * 100;
+                        progressPercentage.innerText = `Video İndiriliyor: %${percentComplete.toFixed(2)}`;
+                    }
+                });
+
+                xhr.addEventListener('readystatechange', function() {
+                    if (xhr.readyState == 4 && xhr.status == 200) {
+                        progressContainer.style.display = 'none';
+                        loader.style.display = 'none';
+                        var link = document.createElement('a');
+                        link.href = window.URL.createObjectURL(new Blob([xhr.response], { type: 'application/octet-stream' }));
+                        link.download = xhr.getResponseHeader('Content-Disposition').split('filename=')[1];
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        alert('İndirme tamamlandı!');
+                    }
+                });
+
+                xhr.send(formData);
+            });
+
+            var socket = new WebSocket('ws://' + window.location.host + '/ws/progress/');
+
+            socket.onmessage = function(e) {
+                var data = JSON.parse(e.data);
+                progressPercentage.innerText = data.message;
+            };
+
+            socket.onclose = function(e) {
+                console.error('WebSocket kapandı.');
+            };
+        }
+
+        window.onload = function() {
+            startDownload();
+
+            // URL input alanında bir değişiklik olduğunda fetchVideoInfo fonksiyonunu çağır
+            var urlInput = document.getElementById("url");
+            urlInput.addEventListener('input', function() {
+                fetchVideoInfo();
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>YouTube Video İndirici</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.url.label_tag }} {{ form.url }}
+        <br><br>
+        {{ form.quality.label_tag }} {{ form.quality }}
+        <br><br>
+        <button type="submit">İndir</button>
+    </form>
+    <h3 id="videoTitle"></h3>
+    <img id="videoThumbnail" src="" alt="Video Thumbnail" width="320">
+    <br>
+    <div id="progressContainer">
+        <p id="progressPercentage">İndirmek İstediğiniz Videonun Linkini Yapıştırın</p>
+    </div>
+    <div id="loader"></div>
+</body>
+</html>
